@@ -54,8 +54,7 @@ A **Spring Boot and Thymeleaf web application** that provides online stationery 
 
 **Service Listing Page**  
 ![Our Services](./screenshots/services.png)  
-
-> Replace the placeholders above with actual screenshots from your application.
+.
 
 ---
 
@@ -63,5 +62,6 @@ A **Spring Boot and Thymeleaf web application** that provides online stationery 
 
 1. **Clone the repository**
 ```bash
-git clone https://github.com/yourusername/the-sky-online-service.git
+git clone https://github.com/meshack-venance/the-sky-online-service.git
 cd the-sky-online-service
+
