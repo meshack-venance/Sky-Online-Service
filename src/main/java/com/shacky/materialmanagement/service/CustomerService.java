@@ -3,6 +3,7 @@ package com.shacky.materialmanagement.service;
 import com.shacky.materialmanagement.entity.Customer;
 import com.shacky.materialmanagement.repository.CustomerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -11,8 +12,13 @@ import java.util.Optional;
 public class CustomerService {
     @Autowired
     private CustomerRepository customerRepository;
+    @Autowired
+    private BCryptPasswordEncoder passwordEncoder;
 
     public Customer saveCustomer(Customer customer) {
+        if (customer.getPassword() != null && !isEncoded(customer.getPassword())) {
+            customer.setPassword(passwordEncoder.encode(customer.getPassword()));
+        }
         return customerRepository.save(customer);
     }
     public Optional<Customer> findByLastNameAndPhoneNumber(String lastName, Integer phoneNumber) {
@@ -27,5 +33,29 @@ public class CustomerService {
 
     public Optional<Customer> findByEmail(String email) {
         return customerRepository.findByEmailIgnoreCase(email);
+    }
+
+    public boolean passwordMatches(Customer customer, String rawPassword) {
+        String storedPassword = customer.getPassword();
+        if (storedPassword == null || rawPassword == null) {
+            return false;
+        }
+
+        if (isEncoded(storedPassword)) {
+            return passwordEncoder.matches(rawPassword, storedPassword);
+        }
+
+        boolean matches = storedPassword.equals(rawPassword);
+        if (matches) {
+            customer.setPassword(passwordEncoder.encode(rawPassword));
+            customerRepository.save(customer);
+        }
+        return matches;
+    }
+
+    private boolean isEncoded(String password) {
+        return password.startsWith("$2a$")
+                || password.startsWith("$2b$")
+                || password.startsWith("$2y$");
     }
 }

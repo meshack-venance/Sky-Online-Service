@@ -68,7 +68,7 @@ public class OrderController {
             customer.setEmail(email);
             customer.setRegion(region);
             customer.setDistrict(district);
-            customer.setPassword(password); // You can later hash this
+            customer.setPassword(password);
             customer = customerService.saveCustomer(customer);
         }
 
@@ -133,7 +133,7 @@ public class OrderController {
             customer = customerService.findByEmail(normalizedIdentifier).orElse(null);
         }
 
-        if (customer != null && customer.getPassword().equals(password)) {
+        if (customer != null && customerService.passwordMatches(customer, password)) {
             String accessToken = jwtTokenService.generateAccessToken(customer);
             JwtTokenService.RefreshTokenPayload refreshToken = jwtTokenService.generateRefreshToken(customer);
             refreshTokenService.create(customer, refreshToken);
