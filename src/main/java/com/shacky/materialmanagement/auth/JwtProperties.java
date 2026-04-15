@@ -7,17 +7,26 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "app.auth.jwt")
 public class JwtProperties {
 
-    private String secret;
+    private String accessSecret;
+    private String refreshSecret;
     private long accessTokenExpirationMinutes = 15;
     private long refreshTokenExpirationDays = 7;
     private boolean cookieSecure;
 
-    public String getSecret() {
-        return secret;
+    public String getAccessSecret() {
+        return accessSecret;
     }
 
-    public void setSecret(String secret) {
-        this.secret = secret;
+    public void setAccessSecret(String accessSecret) {
+        this.accessSecret = accessSecret;
+    }
+
+    public String getRefreshSecret() {
+        return refreshSecret;
+    }
+
+    public void setRefreshSecret(String refreshSecret) {
+        this.refreshSecret = refreshSecret;
     }
 
     public long getAccessTokenExpirationMinutes() {

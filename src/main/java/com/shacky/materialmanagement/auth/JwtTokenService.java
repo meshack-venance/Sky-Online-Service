@@ -21,7 +21,8 @@ import java.util.UUID;
 public class JwtTokenService {
 
     private final JwtProperties jwtProperties;
-    private SecretKey secretKey;
+    private SecretKey accessSecretKey;
+    private SecretKey refreshSecretKey;
 
     public JwtTokenService(JwtProperties jwtProperties) {
         this.jwtProperties = jwtProperties;
@@ -29,11 +30,8 @@ public class JwtTokenService {
 
     @PostConstruct
     void init() {
-        String secret = jwtProperties.getSecret();
-        if (secret == null || secret.length() < 32) {
-            throw new IllegalStateException("app.auth.jwt.secret must be configured and at least 32 characters long");
-        }
-        this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+        this.accessSecretKey = toKey(jwtProperties.getAccessSecret(), "app.auth.jwt.access-secret");
+        this.refreshSecretKey = toKey(jwtProperties.getRefreshSecret(), "app.auth.jwt.refresh-secret");
     }
 
     public String generateAccessToken(Customer customer) {
@@ -47,7 +45,7 @@ public class JwtTokenService {
                 .claim("phoneNumber", customer.getPhoneNumber())
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(expiration))
-                .signWith(secretKey)
+                .signWith(accessSecretKey)
                 .compact();
     }
 
@@ -62,39 +60,59 @@ public class JwtTokenService {
                 .claim("type", "refresh")
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(expiration))
-                .signWith(secretKey)
+                .signWith(refreshSecretKey)
                 .compact();
 
         return new RefreshTokenPayload(tokenId, token, LocalDateTime.ofInstant(expiration, ZoneOffset.UTC));
     }
 
     public Claims parse(String token) {
+        return parseAccessToken(token);
+    }
+
+    public Claims parseAccessToken(String token) {
         return Jwts.parser()
-                .verifyWith(secretKey)
+                .verifyWith(accessSecretKey)
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
     }
 
-    public Claims parseIgnoringExpiration(String token) {
+    public Claims parseRefreshToken(String token) {
+        return Jwts.parser()
+                .verifyWith(refreshSecretKey)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload();
+    }
+
+    public Claims parseAccessTokenIgnoringExpiration(String token) {
         try {
-            return parse(token);
+            return parseAccessToken(token);
+        } catch (ExpiredJwtException e) {
+            return e.getClaims();
+        }
+    }
+
+    public Claims parseRefreshTokenIgnoringExpiration(String token) {
+        try {
+            return parseRefreshToken(token);
         } catch (ExpiredJwtException e) {
             return e.getClaims();
         }
     }
 
     public boolean isValidAccessToken(String token) {
-        return isValidTokenType(token, "access");
+        return isValidTokenType(token, "access", accessSecretKey);
     }
 
     public boolean isValidRefreshToken(String token) {
-        return isValidTokenType(token, "refresh");
+        return isValidTokenType(token, "refresh", refreshSecretKey);
     }
 
     public boolean isExpired(String token) {
         try {
-            parse(token);
+            parseAccessToken(token);
             return false;
         } catch (ExpiredJwtException e) {
             return true;
@@ -107,13 +125,24 @@ public class JwtTokenService {
         return Long.parseLong(claims.getSubject());
     }
 
-    private boolean isValidTokenType(String token, String expectedType) {
+    private boolean isValidTokenType(String token, String expectedType, SecretKey secretKey) {
         try {
-            Claims claims = parse(token);
+            Claims claims = Jwts.parser()
+                    .verifyWith(secretKey)
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
             return expectedType.equals(claims.get("type", String.class));
         } catch (JwtException e) {
             return false;
         }
+    }
+
+    private SecretKey toKey(String secret, String propertyName) {
+        if (secret == null || secret.length() < 32) {
+            throw new IllegalStateException(propertyName + " must be configured and at least 32 characters long");
+        }
+        return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
     }
 
     public record RefreshTokenPayload(String tokenId, String token, LocalDateTime expiresAt) {

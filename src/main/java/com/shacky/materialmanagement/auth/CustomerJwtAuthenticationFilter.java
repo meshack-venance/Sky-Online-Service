@@ -48,7 +48,7 @@ public class CustomerJwtAuthenticationFilter extends OncePerRequestFilter {
     private void authenticateFromCookies(HttpServletRequest request, HttpServletResponse response) {
         String accessToken = customerAuthCookieService.readAccessToken(request);
         if (accessToken != null && jwtTokenService.isValidAccessToken(accessToken)) {
-            Claims claims = jwtTokenService.parse(accessToken);
+            Claims claims = jwtTokenService.parseAccessToken(accessToken);
             authenticateCustomer(jwtTokenService.extractCustomerId(claims));
             return;
         }
@@ -58,7 +58,7 @@ public class CustomerJwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        Claims claims = jwtTokenService.parse(refreshTokenValue);
+        Claims claims = jwtTokenService.parseRefreshToken(refreshTokenValue);
         Long customerId = jwtTokenService.extractCustomerId(claims);
         String tokenId = claims.getId();
 
