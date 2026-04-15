@@ -113,12 +113,13 @@ public class OrderController {
                                     HttpSession session,
                                     RedirectAttributes redirectAttributes) {
 
+        String normalizedIdentifier = identifier == null ? "" : identifier.trim();
         Customer customer;
         try {
-            Integer phoneNumber = Integer.parseInt(identifier);
+            Integer phoneNumber = Integer.parseInt(normalizedIdentifier);
             customer = customerService.findByPhoneNumber(phoneNumber).orElse(null);
         } catch (NumberFormatException e) {
-            customer = customerService.findByLastName(identifier).orElse(null);
+            customer = customerService.findByEmail(normalizedIdentifier).orElse(null);
         }
 
         if (customer != null && customer.getPassword().equals(password)) {
