@@ -1,12 +1,9 @@
 package com.shacky.materialmanagement.controller;
 
 import com.shacky.materialmanagement.auth.CurrentCustomerService;
-import com.shacky.materialmanagement.auth.CustomerAuthCookieService;
-import com.shacky.materialmanagement.auth.JwtTokenService;
-import com.shacky.materialmanagement.auth.RefreshTokenService;
+import com.shacky.materialmanagement.auth.CustomerAuthenticationService;
 import com.shacky.materialmanagement.entity.*;
 import com.shacky.materialmanagement.service.*;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -28,24 +25,28 @@ import java.util.List;
 @RequestMapping("/orders")
 public class OrderController {
 
-    @Autowired
-    private CustomerService customerService;
+    private final CustomerService customerService;
+    private final OnlineServiceService onlineServiceService;
+    private final ServiceOrderService serviceOrderService;
+    private final UploadedDocumentService uploadedDocumentService;
+    private final CurrentCustomerService currentCustomerService;
+    private final CustomerAuthenticationService customerAuthenticationService;
 
-    @Autowired
-    private OnlineServiceService onlineServiceService;
-
-    @Autowired
-    private ServiceOrderService serviceOrderService;
-    @Autowired
-    private UploadedDocumentService uploadedDocumentService;
-    @Autowired
-    private CurrentCustomerService currentCustomerService;
-    @Autowired
-    private JwtTokenService jwtTokenService;
-    @Autowired
-    private RefreshTokenService refreshTokenService;
-    @Autowired
-    private CustomerAuthCookieService customerAuthCookieService;
+    public OrderController(
+            CustomerService customerService,
+            OnlineServiceService onlineServiceService,
+            ServiceOrderService serviceOrderService,
+            UploadedDocumentService uploadedDocumentService,
+            CurrentCustomerService currentCustomerService,
+            CustomerAuthenticationService customerAuthenticationService
+    ) {
+        this.customerService = customerService;
+        this.onlineServiceService = onlineServiceService;
+        this.serviceOrderService = serviceOrderService;
+        this.uploadedDocumentService = uploadedDocumentService;
+        this.currentCustomerService = currentCustomerService;
+        this.customerAuthenticationService = customerAuthenticationService;
+    }
 
     @PostMapping("/place")
     public String placeOrder(@RequestParam String firstName,
@@ -123,25 +124,9 @@ public class OrderController {
                                     @RequestParam String password,
                                     HttpServletResponse response,
                                     RedirectAttributes redirectAttributes) {
-
-        String normalizedIdentifier = identifier == null ? "" : identifier.trim();
-        Customer customer;
-        try {
-            Integer phoneNumber = Integer.parseInt(normalizedIdentifier);
-            customer = customerService.findByPhoneNumber(phoneNumber).orElse(null);
-        } catch (NumberFormatException e) {
-            customer = customerService.findByEmail(normalizedIdentifier).orElse(null);
-        }
-
-        if (customer != null && customerService.passwordMatches(customer, password)) {
-            String accessToken = jwtTokenService.generateAccessToken(customer);
-            JwtTokenService.RefreshTokenPayload refreshToken = jwtTokenService.generateRefreshToken(customer);
-            refreshTokenService.create(customer, refreshToken);
-            customerAuthCookieService.writeAccessToken(response, accessToken);
-            customerAuthCookieService.writeRefreshToken(response, refreshToken.token());
+        if (customerAuthenticationService.authenticate(identifier, password, response).isPresent()) {
             return "redirect:/orders/my-orders";
         }
-        customerAuthCookieService.clearTokens(response);
         redirectAttributes.addFlashAttribute("error", "Invalid credentials. Please try again.");
         return "redirect:/services";
     }
@@ -372,8 +357,11 @@ public class OrderController {
 
     @GetMapping("/logout")
     public String logout(HttpServletResponse response) {
-        currentCustomerService.getCurrentCustomer().ifPresent(refreshTokenService::revokeAllForCustomer);
-        customerAuthCookieService.clearTokens(response);
+        currentCustomerService.getCurrentCustomer()
+                .ifPresentOrElse(
+                        customer -> customerAuthenticationService.logout(customer, response),
+                        () -> customerAuthenticationService.clearTokens(response)
+                );
         return "redirect:/services";
     }
 

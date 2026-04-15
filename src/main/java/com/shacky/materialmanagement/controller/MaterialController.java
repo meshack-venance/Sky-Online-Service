@@ -1,13 +1,11 @@
 package com.shacky.materialmanagement.controller;
 
 import com.shacky.materialmanagement.entity.*;
-import com.shacky.materialmanagement.repository.AdminRepository;
 import com.shacky.materialmanagement.service.*;
 import com.shacky.materialmanagement.util.FileStorageUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -24,26 +22,28 @@ import java.util.Optional;
 @Controller
 public class MaterialController {
 
-    @Autowired
-    private MaterialService materialService;
+    private final MaterialService materialService;
+    private final AdminService adminService;
+    private final BCryptPasswordEncoder passwordEncoder;
+    private final OnlineServiceService onlineServiceService;
+    private final ServiceOrderService serviceOrderService;
+    private final CommentService commentService;
 
-    @Autowired
-    private AdminRepository adminRepository;
-
-    @Autowired
-    private AdminService adminService;
-
-    @Autowired
-    private BCryptPasswordEncoder passwordEncoder;
-
-    @Autowired
-    private OnlineServiceService onlineServiceService;
-
-    @Autowired
-    private ServiceOrderService serviceOrderService;
-
-    @Autowired
-    private CommentService commentService;
+    public MaterialController(
+            MaterialService materialService,
+            AdminService adminService,
+            BCryptPasswordEncoder passwordEncoder,
+            OnlineServiceService onlineServiceService,
+            ServiceOrderService serviceOrderService,
+            CommentService commentService
+    ) {
+        this.materialService = materialService;
+        this.adminService = adminService;
+        this.passwordEncoder = passwordEncoder;
+        this.onlineServiceService = onlineServiceService;
+        this.serviceOrderService = serviceOrderService;
+        this.commentService = commentService;
+    }
 
     @GetMapping("/")
     public String homePage(Model model) {

@@ -2,7 +2,6 @@ package com.shacky.materialmanagement.service;
 
 import com.shacky.materialmanagement.entity.Customer;
 import com.shacky.materialmanagement.repository.CustomerRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -10,10 +9,13 @@ import java.util.Optional;
 
 @Service
 public class CustomerService {
-    @Autowired
-    private CustomerRepository customerRepository;
-    @Autowired
-    private BCryptPasswordEncoder passwordEncoder;
+    private final CustomerRepository customerRepository;
+    private final BCryptPasswordEncoder passwordEncoder;
+
+    public CustomerService(CustomerRepository customerRepository, BCryptPasswordEncoder passwordEncoder) {
+        this.customerRepository = customerRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
 
     public Customer saveCustomer(Customer customer) {
         if (customer.getPassword() != null && !isEncoded(customer.getPassword())) {
