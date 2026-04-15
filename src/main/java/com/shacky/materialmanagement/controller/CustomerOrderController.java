@@ -1,51 +1,68 @@
 package com.shacky.materialmanagement.controller;
 
+import com.itextpdf.text.BaseColor;
+import com.itextpdf.text.Document;
+import com.itextpdf.text.Element;
+import com.itextpdf.text.Font;
+import com.itextpdf.text.FontFactory;
+import com.itextpdf.text.Image;
+import com.itextpdf.text.Paragraph;
+import com.itextpdf.text.Phrase;
+import com.itextpdf.text.pdf.BarcodeQRCode;
+import com.itextpdf.text.pdf.ColumnText;
+import com.itextpdf.text.pdf.PdfContentByte;
+import com.itextpdf.text.pdf.PdfPCell;
+import com.itextpdf.text.pdf.PdfPTable;
+import com.itextpdf.text.pdf.PdfPageEventHelper;
+import com.itextpdf.text.pdf.PdfWriter;
 import com.shacky.materialmanagement.auth.CurrentCustomerService;
-import com.shacky.materialmanagement.auth.CustomerAuthenticationService;
-import com.shacky.materialmanagement.entity.*;
-import com.shacky.materialmanagement.service.*;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import com.itextpdf.text.*;
-import com.itextpdf.text.pdf.*;
+import com.shacky.materialmanagement.entity.Customer;
+import com.shacky.materialmanagement.entity.OnlineService;
+import com.shacky.materialmanagement.entity.ServiceOrder;
+import com.shacky.materialmanagement.entity.UploadedDocument;
+import com.shacky.materialmanagement.service.CustomerService;
+import com.shacky.materialmanagement.service.OnlineServiceService;
+import com.shacky.materialmanagement.service.ServiceOrderService;
+import com.shacky.materialmanagement.service.UploadedDocumentService;
 import jakarta.servlet.http.HttpServletResponse;
 import org.apache.commons.io.IOUtils;
-
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.io.InputStream;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Controller
 @RequestMapping("/orders")
-public class OrderController {
+public class CustomerOrderController {
 
     private final CustomerService customerService;
     private final OnlineServiceService onlineServiceService;
     private final ServiceOrderService serviceOrderService;
     private final UploadedDocumentService uploadedDocumentService;
     private final CurrentCustomerService currentCustomerService;
-    private final CustomerAuthenticationService customerAuthenticationService;
 
-    public OrderController(
+    public CustomerOrderController(
             CustomerService customerService,
             OnlineServiceService onlineServiceService,
             ServiceOrderService serviceOrderService,
             UploadedDocumentService uploadedDocumentService,
-            CurrentCustomerService currentCustomerService,
-            CustomerAuthenticationService customerAuthenticationService
+            CurrentCustomerService currentCustomerService
     ) {
         this.customerService = customerService;
         this.onlineServiceService = onlineServiceService;
         this.serviceOrderService = serviceOrderService;
         this.uploadedDocumentService = uploadedDocumentService;
         this.currentCustomerService = currentCustomerService;
-        this.customerAuthenticationService = customerAuthenticationService;
     }
 
     @PostMapping("/place")
@@ -81,9 +98,9 @@ public class OrderController {
 
         double totalCost = service.getCost() != null ? service.getCost() : 0.0;
         List<ServiceOrder> existingOrders = serviceOrderService.getOrdersByCustomer(customer);
-        for (ServiceOrder o : existingOrders) {
-            if (o.getService().getCost() != null) {
-                totalCost += o.getService().getCost();
+        for (ServiceOrder existingOrder : existingOrders) {
+            if (existingOrder.getService().getCost() != null) {
+                totalCost += existingOrder.getService().getCost();
             }
         }
 
@@ -98,13 +115,11 @@ public class OrderController {
         redirectAttributes.addFlashAttribute("totalCost", totalCost);
 
         return "redirect:/orders/details/" + serviceId;
-
     }
 
     @GetMapping("/details/{id}")
     public String viewServiceDetails(@PathVariable Long id, Model model) {
-        Customer loggedInCustomer = currentCustomerService.getCurrentCustomer().orElse(null);
-        if (loggedInCustomer != null) {
+        if (currentCustomerService.getCurrentCustomer().isPresent()) {
             return "redirect:/orders/my-orders";
         }
 
@@ -117,20 +132,6 @@ public class OrderController {
         model.addAttribute("service", service);
         return "service-details";
     }
-
-
-    @PostMapping("/login")
-    public String loginToViewOrders(@RequestParam String identifier,
-                                    @RequestParam String password,
-                                    HttpServletResponse response,
-                                    RedirectAttributes redirectAttributes) {
-        if (customerAuthenticationService.authenticate(identifier, password, response).isPresent()) {
-            return "redirect:/orders/my-orders";
-        }
-        redirectAttributes.addFlashAttribute("error", "Invalid credentials. Please try again.");
-        return "redirect:/services";
-    }
-
 
     @GetMapping("/my-orders")
     public String viewMyOrders(Model model, RedirectAttributes redirectAttributes) {
@@ -145,16 +146,13 @@ public class OrderController {
         model.addAttribute("orders", orders);
         model.addAttribute("customer", customer);
 
-        // Calculate total cost
         double totalCost = orders.stream()
                 .mapToDouble(order -> order.getService().getCost() != null ? order.getService().getCost() : 0.0)
                 .sum();
-
         model.addAttribute("totalCost", totalCost);
 
         return "my-orders";
     }
-
 
     @PostMapping("/add-service/{serviceId}")
     public String quickAddServiceToOrders(@PathVariable Long serviceId, RedirectAttributes redirectAttributes) {
@@ -173,14 +171,14 @@ public class OrderController {
 
         ServiceOrder order = new ServiceOrder();
         order.setCustomer(customer);
-        order.setService(service); // Make sure to use setService (not setOnlineService)
+        order.setService(service);
         order.setDatePlaced(LocalDateTime.now());
         order.setStatus("Pending");
 
         serviceOrderService.saveOrder(order);
-
         return "redirect:/orders/my-orders";
     }
+
     @GetMapping("/download/{orderId}")
     public void downloadReceipt(@PathVariable Long orderId, HttpServletResponse response) {
         try {
@@ -201,10 +199,8 @@ public class OrderController {
 
             Document document = new Document();
             PdfWriter writer = PdfWriter.getInstance(document, response.getOutputStream());
-
-            // Add watermark
             writer.setPageEvent(new PdfPageEventHelper() {
-                Font watermarkFont = new Font(Font.FontFamily.HELVETICA, 52, Font.BOLD, new BaseColor(200, 200, 200));
+                private final Font watermarkFont = new Font(Font.FontFamily.HELVETICA, 52, Font.BOLD, new BaseColor(200, 200, 200));
 
                 @Override
                 public void onEndPage(PdfWriter writer, Document document) {
@@ -220,24 +216,18 @@ public class OrderController {
 
             document.open();
 
-            // Logo
-//            String logoPath = "src/main/resources/static/images/kyline-logo.jpeg"; // adjust path
-//            Image logo = Image.getInstance(logoPath);
             InputStream logoStream = getClass().getResourceAsStream("/static/images/kyline-logo.jpeg");
             Image logo = Image.getInstance(IOUtils.toByteArray(logoStream));
-
             logo.scaleAbsolute(100, 100);
             logo.setAlignment(Image.ALIGN_CENTER);
             document.add(logo);
 
-            // Title
             Font titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 18);
             Paragraph title = new Paragraph("Service Order Receipt", titleFont);
             title.setAlignment(Element.ALIGN_CENTER);
             title.setSpacingAfter(20);
             document.add(title);
 
-            // Bordered Table
             PdfPTable table = new PdfPTable(1);
             table.setWidthPercentage(90);
             table.setSpacingBefore(10f);
@@ -257,14 +247,12 @@ public class OrderController {
             content.append("Cost: TSH ").append(order.getService().getCost()).append("\n");
             content.append("Status: ").append(order.getStatus()).append("\n");
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd MMMM yyyy 'at' hh:mm a");
-            String formattedDateTime = order.getDatePlaced().format(formatter);
-            content.append("Date Placed: ").append(formattedDateTime).append("\n");
+            content.append("Date Placed: ").append(order.getDatePlaced().format(formatter)).append("\n");
 
             cell.setPhrase(new Phrase(content.toString(), FontFactory.getFont(FontFactory.HELVETICA, 12)));
             table.addCell(cell);
             document.add(table);
 
-            // QR Code
             BarcodeQRCode qrCode = new BarcodeQRCode("Order ID: " + order.getId() +
                     "\nCustomer: " + order.getCustomer().getFirstName() + " " + order.getCustomer().getLastName() +
                     "\nService: " + order.getService().getTitle(), 150, 150, null);
@@ -273,12 +261,6 @@ public class OrderController {
             qrImage.setAlignment(Image.ALIGN_CENTER);
             document.add(qrImage);
 
-            // Admin Signature Line
-//            Paragraph signature = new Paragraph("\n\nAuthorized By (Admin): ___________________________", FontFactory.getFont(FontFactory.HELVETICA, 12));
-//            signature.setSpacingBefore(30);
-//            document.add(signature);
-
-            // Footer
             Font footerFont = FontFactory.getFont(FontFactory.HELVETICA, 10, BaseColor.GRAY);
             Phrase footer = new Phrase("For assistance, contact  (+255) 750 613 191 ", footerFont);
             ColumnText.showTextAligned(writer.getDirectContent(),
@@ -289,11 +271,11 @@ public class OrderController {
 
             document.close();
             writer.close();
-
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
+
     @PostMapping("/cancel/{orderId}")
     public String cancelOrder(@PathVariable Long orderId, RedirectAttributes redirectAttributes) {
         Customer customer = currentCustomerService.getCurrentCustomer().orElse(null);
@@ -304,7 +286,6 @@ public class OrderController {
         }
 
         ServiceOrder order = serviceOrderService.getOrderById(orderId).orElse(null);
-
         if (order == null || !order.getCustomer().getId().equals(customer.getId())) {
             redirectAttributes.addFlashAttribute("error", "Order not found or you do not have permission to cancel it.");
             return "redirect:/orders/my-orders";
@@ -315,11 +296,11 @@ public class OrderController {
             return "redirect:/orders/my-orders";
         }
 
-        serviceOrderService.deleteOrder(order); // Delete from database
-
+        serviceOrderService.deleteOrder(order);
         redirectAttributes.addFlashAttribute("success", "Order cancelled and deleted successfully.");
         return "redirect:/orders/my-orders";
     }
+
     @PostMapping("/upload-document/{orderId}")
     public String uploadDocument(@PathVariable Long orderId,
                                  @RequestParam("document") MultipartFile file,
@@ -338,8 +319,6 @@ public class OrderController {
             return "redirect:/orders/my-orders";
         }
 
-        // Save the document file (e.g., in a local directory or cloud storage)
-        // Assuming the file is saved successfully, you get its path
         String documentPath = "/path/to/uploaded/document/" + file.getOriginalFilename();
 
         UploadedDocument uploadedDocument = new UploadedDocument();
@@ -349,21 +328,7 @@ public class OrderController {
         uploadedDocument.setDescription(description);
 
         uploadedDocumentService.saveDocument(uploadedDocument);
-
         redirectAttributes.addFlashAttribute("success", "Document uploaded successfully.");
         return "redirect:/orders/my-orders";
     }
-
-
-    @GetMapping("/logout")
-    public String logout(HttpServletResponse response) {
-        currentCustomerService.getCurrentCustomer()
-                .ifPresentOrElse(
-                        customer -> customerAuthenticationService.logout(customer, response),
-                        () -> customerAuthenticationService.clearTokens(response)
-                );
-        return "redirect:/services";
-    }
-
-
 }
