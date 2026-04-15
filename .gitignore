@@ -2,6 +2,7 @@
 application.properties
 .env
 /config/application-secrets.yaml
+/uploads/
 
 # Logs
 *.log

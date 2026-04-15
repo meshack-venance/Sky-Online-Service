@@ -93,10 +93,37 @@
                             </span>
                         </p>
 
-                        <a th:href="@{/download/{id}(id=${material.id})}"
-                           class="btn btn-custom-download mt-3" target="_blank">
-                            <i class="bi bi-download me-1"></i> Download
-                        </a>
+                        <div class="d-flex flex-wrap gap-2 mt-3">
+                            <button type="button"
+                                    class="btn btn-outline-primary"
+                                    th:if="${#strings.endsWith(#strings.toLowerCase(material.fileName), '.jpg')
+                                        or #strings.endsWith(#strings.toLowerCase(material.fileName), '.jpeg')
+                                        or #strings.endsWith(#strings.toLowerCase(material.fileName), '.png')
+                                        or #strings.endsWith(#strings.toLowerCase(material.fileName), '.gif')
+                                        or #strings.endsWith(#strings.toLowerCase(material.fileName), '.bmp')
+                                        or #strings.endsWith(#strings.toLowerCase(material.fileName), '.webp')
+                                        or #strings.endsWith(#strings.toLowerCase(material.fileName), '.pdf')}"
+                                    th:attr="data-file-url=${material.fileUrl},data-file-name=${material.fileName},data-file-type=${#strings.endsWith(#strings.toLowerCase(material.fileName), '.pdf')} ? 'pdf' : 'image'"
+                                    onclick="openPreview(this)">
+                                <i class="bi bi-eye me-1"></i> Preview
+                            </button>
+                            <a th:href="${material.fileUrl}"
+                               class="btn btn-outline-secondary"
+                               th:if="${!(#strings.endsWith(#strings.toLowerCase(material.fileName), '.jpg')
+                                   or #strings.endsWith(#strings.toLowerCase(material.fileName), '.jpeg')
+                                   or #strings.endsWith(#strings.toLowerCase(material.fileName), '.png')
+                                   or #strings.endsWith(#strings.toLowerCase(material.fileName), '.gif')
+                                   or #strings.endsWith(#strings.toLowerCase(material.fileName), '.bmp')
+                                   or #strings.endsWith(#strings.toLowerCase(material.fileName), '.webp')
+                                   or #strings.endsWith(#strings.toLowerCase(material.fileName), '.pdf'))}"
+                               target="_blank" rel="noopener">
+                                <i class="bi bi-box-arrow-up-right me-1"></i> Open
+                            </a>
+                            <a th:href="@{/download/{id}(id=${material.id})}"
+                               class="btn btn-custom-download" target="_blank">
+                                <i class="bi bi-download me-1"></i> Download
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -166,6 +193,27 @@
     </div>
 </footer>
 
+<div class="modal fade" id="filePreviewModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="filePreviewTitle">Preview</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <img id="imagePreview" class="img-fluid rounded d-none mx-auto d-block" alt="File preview">
+                <iframe id="pdfPreview" class="w-100 d-none rounded border" style="height: 75vh;" title="PDF preview"></iframe>
+            </div>
+            <div class="modal-footer">
+                <a id="previewOpenLink" class="btn btn-outline-secondary" target="_blank" rel="noopener">
+                    <i class="bi bi-box-arrow-up-right me-1"></i> Open in new tab
+                </a>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Login to View Orders Modal -->
 <div class="modal fade" id="orderLoginModal" tabindex="-1">
     <div class="modal-dialog">
@@ -197,6 +245,35 @@
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+    function openPreview(button) {
+        const fileUrl = button.dataset.fileUrl;
+        const fileName = button.dataset.fileName || 'Preview';
+        const fileType = button.dataset.fileType;
+        const title = document.getElementById('filePreviewTitle');
+        const imagePreview = document.getElementById('imagePreview');
+        const pdfPreview = document.getElementById('pdfPreview');
+        const openLink = document.getElementById('previewOpenLink');
+
+        title.textContent = fileName;
+        openLink.href = fileUrl;
+        imagePreview.classList.add('d-none');
+        pdfPreview.classList.add('d-none');
+        imagePreview.removeAttribute('src');
+        pdfPreview.removeAttribute('src');
+
+        if (fileType === 'pdf') {
+            pdfPreview.src = fileUrl;
+            pdfPreview.classList.remove('d-none');
+        } else {
+            imagePreview.src = fileUrl;
+            imagePreview.alt = fileName;
+            imagePreview.classList.remove('d-none');
+        }
+
+        const previewModal = new bootstrap.Modal(document.getElementById('filePreviewModal'));
+        previewModal.show();
+    }
+
     function showOrderLoginForm() {
         const loginModal = new bootstrap.Modal(document.getElementById('orderLoginModal'));
         loginModal.show();
