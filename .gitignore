@@ -1,6 +1,7 @@
 # Spring Boot config (exclude sensitive secrets)
 application.properties
 .env
+/config/application-secrets.yaml
 
 # Logs
 *.log

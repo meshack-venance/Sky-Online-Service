@@ -64,4 +64,29 @@ A **Spring Boot and Thymeleaf web application** that provides online stationery 
 ```bash
 git clone https://github.com/meshack-venance/the-sky-online-service.git
 cd the-sky-online-service
+```
+
+2. **Create your local secrets file**
+```bash
+cp config/application-secrets.yaml.example config/application-secrets.yaml
+```
+
+3. **Choose the profile**
+```bash
+# default
+export SPRING_PROFILES_ACTIVE=dev
+
+# for production
+export SPRING_PROFILES_ACTIVE=prod
+```
+
+4. **Set real secrets outside Git**
+- Keep real database passwords and keys in environment variables or `config/application-secrets.yaml`.
+- Do not commit `config/application-secrets.yaml`.
+- Default local PostgreSQL URL is `jdbc:postgresql://localhost:5432/sky_online_service`.
+
+5. **Bootstrap the first admin explicitly**
+- The app no longer creates a default `admin/password` account.
+- To create the first admin on an empty database, set `APP_ADMIN_USERNAME` and `APP_ADMIN_PASSWORD` in your environment or in `config/application-secrets.yaml`.
+- After the first admin record exists, those bootstrap values are no longer needed for normal startup.
 

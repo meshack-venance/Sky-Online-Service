@@ -1,0 +1,19 @@
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/sky_online_service}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:}
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+logging:
+  level:
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type: TRACE
+
+app:
+  admin:
+    bootstrap:
+      username: ${APP_ADMIN_USERNAME:}
+      password: ${APP_ADMIN_PASSWORD:}

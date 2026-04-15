@@ -1,14 +1,10 @@
 spring:
-  datasource:
-    url: ${DB_URL}
-    username: ${DB_USER}
-    password: ${DB_PASSWORD}
-
+  config:
+    import: optional:file:./config/application-secrets.yaml
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
   jpa:
-    hibernate:
-      ddl-auto: update
-    database-platform: org.hibernate.dialect.MySQL8Dialect
-    # database-platform: org.hibernate.dialect.PostgreSQLDialect
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
     properties:
       hibernate:
         jdbc:
@@ -19,8 +15,3 @@ spring:
     multipart:
       max-file-size: 40MB
       max-request-size: 40MB
-
-logging:
-  level:
-    org.hibernate.SQL: DEBUG
-    org.hibernate.type: TRACE
