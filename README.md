@@ -82,9 +82,11 @@ export SPRING_PROFILES_ACTIVE=prod
 
 4. **Set real secrets outside Git**
 - Keep real database passwords and keys in environment variables or `config/application-secrets.yaml`.
+- Keep the JWT signing secret in environment variables or `config/application-secrets.yaml`.
 - Do not commit `config/application-secrets.yaml`.
 - `application-dev.yaml` and `application-prod.yaml` no longer store DB credentials.
 - Put `spring.datasource.url`, `spring.datasource.username`, and `spring.datasource.password` in `config/application-secrets.yaml` or environment variables.
+- Put `app.auth.jwt.secret` in `config/application-secrets.yaml` or environment variables.
 - Example local PostgreSQL URL is `jdbc:postgresql://localhost:5432/sky_online_db_local`.
 
 5. **Bootstrap the first admin explicitly**

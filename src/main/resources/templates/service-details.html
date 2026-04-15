@@ -64,11 +64,11 @@
                 <a href="/services" class="btn btn-secondary">
                     <i class="bi bi-arrow-left-circle me-1"></i> Back to Services
                 </a>
-                <button class="btn btn-success" onclick="showOrderForm()" th:if="${session.loggedInCustomer == null}">
+                <button class="btn btn-success" onclick="showOrderForm()" th:if="${currentCustomer == null}">
                     <i class="bi bi-cart-plus me-1"></i> Get Service
                 </button>
                 <form th:action="@{'/orders/add-service/' + ${service.id}}" method="post"
-                      th:if="${session.loggedInCustomer != null}" style="display: inline;">
+                      th:if="${currentCustomer != null}" style="display: inline;">
                     <button type="submit" class="btn btn-success">
                         <i class="bi bi-plus-circle me-1"></i> Add Service to My Orders
                     </button>

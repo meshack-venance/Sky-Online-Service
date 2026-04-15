@@ -1,5 +1,9 @@
 package com.shacky.materialmanagement.controller;
 
+import com.shacky.materialmanagement.auth.CurrentCustomerService;
+import com.shacky.materialmanagement.auth.CustomerAuthCookieService;
+import com.shacky.materialmanagement.auth.JwtTokenService;
+import com.shacky.materialmanagement.auth.RefreshTokenService;
 import com.shacky.materialmanagement.entity.*;
 import com.shacky.materialmanagement.service.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +23,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import jakarta.servlet.http.HttpSession;
 
 @Controller
 @RequestMapping("/orders")
@@ -35,6 +38,14 @@ public class OrderController {
     private ServiceOrderService serviceOrderService;
     @Autowired
     private UploadedDocumentService uploadedDocumentService;
+    @Autowired
+    private CurrentCustomerService currentCustomerService;
+    @Autowired
+    private JwtTokenService jwtTokenService;
+    @Autowired
+    private RefreshTokenService refreshTokenService;
+    @Autowired
+    private CustomerAuthCookieService customerAuthCookieService;
 
     @PostMapping("/place")
     public String placeOrder(@RequestParam String firstName,
@@ -90,10 +101,10 @@ public class OrderController {
     }
 
     @GetMapping("/details/{id}")
-    public String viewServiceDetails(@PathVariable Long id, Model model, HttpSession session) {
-        Customer loggedInCustomer = (Customer) session.getAttribute("loggedInCustomer");
+    public String viewServiceDetails(@PathVariable Long id, Model model) {
+        Customer loggedInCustomer = currentCustomerService.getCurrentCustomer().orElse(null);
         if (loggedInCustomer != null) {
-            return "redirect:/orders/my-orders/" + loggedInCustomer.getId();
+            return "redirect:/orders/my-orders";
         }
 
         OnlineService service = onlineServiceService.getServiceById(id).orElse(null);
@@ -110,7 +121,7 @@ public class OrderController {
     @PostMapping("/login")
     public String loginToViewOrders(@RequestParam String identifier,
                                     @RequestParam String password,
-                                    HttpSession session,
+                                    HttpServletResponse response,
                                     RedirectAttributes redirectAttributes) {
 
         String normalizedIdentifier = identifier == null ? "" : identifier.trim();
@@ -123,19 +134,22 @@ public class OrderController {
         }
 
         if (customer != null && customer.getPassword().equals(password)) {
-            // Save the customer in session to mark them as logged in
-            session.setAttribute("loggedInCustomer", customer);
-            redirectAttributes.addFlashAttribute("customerId", customer.getId());
+            String accessToken = jwtTokenService.generateAccessToken(customer);
+            JwtTokenService.RefreshTokenPayload refreshToken = jwtTokenService.generateRefreshToken(customer);
+            refreshTokenService.create(customer, refreshToken);
+            customerAuthCookieService.writeAccessToken(response, accessToken);
+            customerAuthCookieService.writeRefreshToken(response, refreshToken.token());
             return "redirect:/orders/my-orders";
         }
+        customerAuthCookieService.clearTokens(response);
         redirectAttributes.addFlashAttribute("error", "Invalid credentials. Please try again.");
         return "redirect:/services";
     }
 
 
     @GetMapping("/my-orders")
-    public String viewMyOrders(HttpSession session, Model model, RedirectAttributes redirectAttributes) {
-        Customer customer = (Customer) session.getAttribute("loggedInCustomer");
+    public String viewMyOrders(Model model, RedirectAttributes redirectAttributes) {
+        Customer customer = currentCustomerService.getCurrentCustomer().orElse(null);
 
         if (customer == null) {
             redirectAttributes.addFlashAttribute("error", "Please log in to view your orders.");
@@ -158,11 +172,12 @@ public class OrderController {
 
 
     @PostMapping("/add-service/{serviceId}")
-    public String quickAddServiceToOrders(@PathVariable Long serviceId, HttpSession session, RedirectAttributes redirectAttributes) {
-        Customer customer = (Customer) session.getAttribute("loggedInCustomer");
+    public String quickAddServiceToOrders(@PathVariable Long serviceId, RedirectAttributes redirectAttributes) {
+        Customer customer = currentCustomerService.getCurrentCustomer().orElse(null);
 
         if (customer == null) {
-            return "redirect:/login"; // Adjust if you have a different login path
+            redirectAttributes.addFlashAttribute("error", "Please log in to add a service.");
+            return "redirect:/services";
         }
 
         OnlineService service = onlineServiceService.getServiceById(serviceId).orElse(null);
@@ -184,8 +199,14 @@ public class OrderController {
     @GetMapping("/download/{orderId}")
     public void downloadReceipt(@PathVariable Long orderId, HttpServletResponse response) {
         try {
+            Customer customer = currentCustomerService.getCurrentCustomer().orElse(null);
+            if (customer == null) {
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Please log in to download your receipt.");
+                return;
+            }
+
             ServiceOrder order = serviceOrderService.getOrderById(orderId).orElse(null);
-            if (order == null) {
+            if (order == null || !order.getCustomer().getId().equals(customer.getId())) {
                 response.sendError(HttpServletResponse.SC_NOT_FOUND, "Order not found.");
                 return;
             }
@@ -289,8 +310,8 @@ public class OrderController {
         }
     }
     @PostMapping("/cancel/{orderId}")
-    public String cancelOrder(@PathVariable Long orderId, HttpSession session, RedirectAttributes redirectAttributes) {
-        Customer customer = (Customer) session.getAttribute("loggedInCustomer");
+    public String cancelOrder(@PathVariable Long orderId, RedirectAttributes redirectAttributes) {
+        Customer customer = currentCustomerService.getCurrentCustomer().orElse(null);
 
         if (customer == null) {
             redirectAttributes.addFlashAttribute("error", "Please log in to cancel orders.");
@@ -318,8 +339,8 @@ public class OrderController {
     public String uploadDocument(@PathVariable Long orderId,
                                  @RequestParam("document") MultipartFile file,
                                  @RequestParam String description,
-                                 HttpSession session, RedirectAttributes redirectAttributes) {
-        Customer customer = (Customer) session.getAttribute("loggedInCustomer");
+                                 RedirectAttributes redirectAttributes) {
+        Customer customer = currentCustomerService.getCurrentCustomer().orElse(null);
 
         if (customer == null) {
             redirectAttributes.addFlashAttribute("error", "Please log in to upload documents.");
@@ -350,8 +371,9 @@ public class OrderController {
 
 
     @GetMapping("/logout")
-    public String logout(HttpSession session) {
-        session.invalidate();
+    public String logout(HttpServletResponse response) {
+        currentCustomerService.getCurrentCustomer().ifPresent(refreshTokenService::revokeAllForCustomer);
+        customerAuthCookieService.clearTokens(response);
         return "redirect:/services";
     }
 

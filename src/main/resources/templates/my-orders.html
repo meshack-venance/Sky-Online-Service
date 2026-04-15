@@ -41,7 +41,7 @@
         <div class="collapse navbar-collapse" id="navbarMenu">
             <div class="ms-auto d-flex">
                 <a class="btn btn-outline-light me-2" href="/"><i class="bi bi-house-door me-1"></i> Home</a>
-                <a th:if="${session.loggedInCustomer != null}" class="btn btn-outline-light" href="/orders/logout">
+                <a th:if="${currentCustomer != null}" class="btn btn-outline-light" href="/orders/logout">
                     <i class="bi bi-box-arrow-right me-1"></i> Logout
                 </a>
             </div>

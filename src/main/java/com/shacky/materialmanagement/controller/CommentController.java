@@ -1,9 +1,9 @@
 package com.shacky.materialmanagement.controller;
 
+import com.shacky.materialmanagement.auth.CurrentCustomerService;
 import com.shacky.materialmanagement.entity.Comment;
 import com.shacky.materialmanagement.entity.Customer;
 import com.shacky.materialmanagement.service.CommentService;
-import jakarta.servlet.http.HttpSession;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -14,16 +14,17 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 public class CommentController {
 
     private final CommentService commentService;
+    private final CurrentCustomerService currentCustomerService;
 
-    public CommentController(CommentService commentService) {
+    public CommentController(CommentService commentService, CurrentCustomerService currentCustomerService) {
         this.commentService = commentService;
+        this.currentCustomerService = currentCustomerService;
     }
 
     @PostMapping("/post")
     public String postComment(@RequestParam("content") String content,
-                              HttpSession session,
                               RedirectAttributes redirectAttributes) {
-        Customer customer = (Customer) session.getAttribute("loggedInCustomer");
+        Customer customer = currentCustomerService.getCurrentCustomer().orElse(null);
 
         if (customer != null && content != null && !content.trim().isEmpty()) {
             Comment comment = new Comment();
@@ -31,6 +32,8 @@ public class CommentController {
             comment.setCustomer(customer);
             commentService.saveComment(comment);
             redirectAttributes.addFlashAttribute("successMessage", "Your comment has been posted successfully!");
+        } else {
+            redirectAttributes.addFlashAttribute("error", "Please log in before posting a comment.");
         }
 
         return "redirect:/orders/my-orders";
@@ -54,4 +57,3 @@ public class CommentController {
     }
 
 }
-
