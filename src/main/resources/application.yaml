@@ -21,6 +21,4 @@ spring:
 app:
   auth:
     jwt:
-      access-token-expiration-minutes: 15
-      refresh-token-expiration-days: 7
       cookie-secure: false

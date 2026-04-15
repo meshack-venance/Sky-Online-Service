@@ -32,6 +32,8 @@ public class JwtTokenService {
     void init() {
         this.accessSecretKey = toKey(jwtProperties.getAccessSecret(), "app.auth.jwt.access-secret");
         this.refreshSecretKey = toKey(jwtProperties.getRefreshSecret(), "app.auth.jwt.refresh-secret");
+        validateExpiration(jwtProperties.getAccessTokenExpirationMinutes(), "app.auth.jwt.access-token-expiration-minutes");
+        validateExpiration(jwtProperties.getRefreshTokenExpirationDays(), "app.auth.jwt.refresh-token-expiration-days");
     }
 
     public String generateAccessToken(Customer customer) {
@@ -143,6 +145,12 @@ public class JwtTokenService {
             throw new IllegalStateException(propertyName + " must be configured and at least 32 characters long");
         }
         return Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+    }
+
+    private void validateExpiration(Long value, String propertyName) {
+        if (value == null || value <= 0) {
+            throw new IllegalStateException(propertyName + " must be configured and greater than 0");
+        }
     }
 
     public record RefreshTokenPayload(String tokenId, String token, LocalDateTime expiresAt) {

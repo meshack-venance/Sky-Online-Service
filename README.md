@@ -87,6 +87,7 @@ export SPRING_PROFILES_ACTIVE=prod
 - `application-dev.yaml` and `application-prod.yaml` no longer store DB credentials.
 - Put `spring.datasource.url`, `spring.datasource.username`, and `spring.datasource.password` in `config/application-secrets.yaml` or environment variables.
 - Put `app.auth.jwt.access-secret` and `app.auth.jwt.refresh-secret` in `config/application-secrets.yaml` or environment variables.
+- Put `app.auth.jwt.access-token-expiration-minutes` and `app.auth.jwt.refresh-token-expiration-days` in `config/application-secrets.yaml` or environment variables.
 - Example local PostgreSQL URL is `jdbc:postgresql://localhost:5432/sky_online_db_local`.
 
 5. **Bootstrap the first admin explicitly**
