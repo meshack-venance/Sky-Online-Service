@@ -15,13 +15,7 @@ public class Material {
     private String fileName;
     private String contentType;
 
-    @Lob
-    @Column(columnDefinition = "LONGBLOB")
-    private byte[] fileData;
-    // for postgresql
-    // @Lob
-    // @Column(columnDefinition = "BYTEA")
-    // private byte[] fileData;
+    private String fileUrl;
 
     @Column(nullable = false)
     private LocalDateTime validUntil;
@@ -44,8 +38,8 @@ public class Material {
         return contentType;
     }
 
-    public byte[] getFileData() {
-        return fileData;
+    public String getFileUrl() {
+        return fileUrl;
     }
 
     public LocalDateTime getValidUntil() {
@@ -72,8 +66,8 @@ public class Material {
         this.contentType = contentType;
     }
 
-    public void setFileData(byte[] fileData) {
-        this.fileData = fileData;
+    public void setFileUrl(String fileUrl) {
+        this.fileUrl = fileUrl;
     }
 
     public void setValidUntil(LocalDateTime validUntil) {
@@ -86,8 +80,9 @@ public class Material {
 
     @Transient
     public boolean isImage() {
-        if (fileName == null) return false;
-        String extension = fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase();
+        String source = fileName != null ? fileName : fileUrl;
+        if (source == null || !source.contains(".")) return false;
+        String extension = source.substring(source.lastIndexOf('.') + 1).toLowerCase();
         return List.of("jpg", "jpeg", "png", "gif", "bmp", "webp").contains(extension);
     }
 }

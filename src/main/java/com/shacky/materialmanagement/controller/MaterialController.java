@@ -14,12 +14,8 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
-import org.springframework.http.*;
-
-import java.net.MalformedURLException;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.io.*;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -117,11 +113,12 @@ public class MaterialController {
                                  @RequestParam("validDays") int validDays,
                                  RedirectAttributes redirectAttributes) {
         try {
+            String storedFileName = FileStorageUtil.store(file);
             Material material = new Material();
             material.setName(name);
             material.setFileName(file.getOriginalFilename());
             material.setContentType(file.getContentType());
-            material.setFileData(file.getBytes());
+            material.setFileUrl("/uploads/" + storedFileName);
             material.setUploadTime(LocalDateTime.now());
             material.setValidUntil(LocalDateTime.now().plusDays(validDays));
 
@@ -144,31 +141,22 @@ public class MaterialController {
             return;
         }
 
-        response.setContentType(material.getContentType());
+        Path filePath = FileStorageUtil.resolveFromUrl(material.getFileUrl());
+        if (!Files.exists(filePath)) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND, "Material file not found");
+            return;
+        }
+
+        if (material.getContentType() != null && !material.getContentType().isBlank()) {
+            response.setContentType(material.getContentType());
+        }
         response.setHeader("Content-Disposition", "attachment; filename=\"" + material.getFileName() + "\"");
-        response.setContentLength(material.getFileData().length);
+        response.setContentLengthLong(Files.size(filePath));
 
         try (OutputStream outputStream = response.getOutputStream()) {
-            outputStream.write(material.getFileData());
+            Files.copy(filePath, outputStream);
             outputStream.flush();
         }
-    }
-
-
-    @GetMapping("/files/{fileName}")
-    public ResponseEntity<byte[]> getFile(@PathVariable String fileName) {
-        Optional<Material> materialOptional = materialService.getMaterialByFileName(fileName);
-        if (materialOptional.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
-
-        Material material = materialOptional.get();
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.parseMediaType(material.getContentType()));
-        headers.setContentDisposition(ContentDisposition.inline().filename(fileName).build());
-
-        return new ResponseEntity<>(material.getFileData(), headers, HttpStatus.OK);
     }
 
     // Delete a service

@@ -3,6 +3,8 @@ spring:
     import: optional:file:./config/application-secrets.yaml
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:dev}
+  datasource:
+    driver-class-name: org.postgresql.Driver
   jpa:
     database-platform: org.hibernate.dialect.PostgreSQLDialect
     properties:
