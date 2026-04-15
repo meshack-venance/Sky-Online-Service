@@ -1,12 +1,10 @@
 package com.shacky.materialmanagement.controller;
 
-import com.shacky.materialmanagement.entity.Comment;
 import com.shacky.materialmanagement.entity.Material;
 import com.shacky.materialmanagement.entity.OnlineService;
 import com.shacky.materialmanagement.service.CommentService;
 import com.shacky.materialmanagement.service.MaterialService;
 import com.shacky.materialmanagement.service.OnlineServiceService;
-import com.shacky.materialmanagement.util.FileStorageUtil;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -15,10 +13,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.List;
 
 @Controller
 @RequestMapping
@@ -40,18 +34,15 @@ public class PublicPageController {
 
     @GetMapping("/")
     public String homePage(Model model) {
-        List<Material> materials = materialService.getAllMaterials();
-        model.addAttribute("materials", materials);
+        model.addAttribute("materials", materialService.getAllMaterials());
         model.addAttribute("services", onlineServiceService.getAllServices());
         return "home";
     }
 
     @GetMapping("/services")
     public String viewServices(Model model) {
-        List<OnlineService> services = onlineServiceService.getAllServices();
-        List<Comment> comments = commentService.getAllComments();
-        model.addAttribute("services", services);
-        model.addAttribute("comments", comments);
+        model.addAttribute("services", onlineServiceService.getAllServices());
+        model.addAttribute("comments", commentService.getAllComments());
         return "services";
     }
 
@@ -62,7 +53,6 @@ public class PublicPageController {
             model.addAttribute("errorMessage", "Service not found.");
             return "error";
         }
-
         model.addAttribute("service", onlineService);
         return "service-details";
     }
@@ -74,22 +64,10 @@ public class PublicPageController {
             response.sendError(HttpServletResponse.SC_NOT_FOUND, "Material not found in database");
             return;
         }
-
-        Path filePath = FileStorageUtil.resolveFromUrl(material.getFileUrl());
-        if (!Files.exists(filePath)) {
-            response.sendError(HttpServletResponse.SC_NOT_FOUND, "Material file not found");
-            return;
-        }
-
-        if (material.getContentType() != null && !material.getContentType().isBlank()) {
-            response.setContentType(material.getContentType());
-        }
-        response.setHeader("Content-Disposition", "attachment; filename=\"" + material.getFileName() + "\"");
-        response.setContentLengthLong(Files.size(filePath));
-
-        try (OutputStream outputStream = response.getOutputStream()) {
-            Files.copy(filePath, outputStream);
-            outputStream.flush();
+        try {
+            materialService.streamMaterial(material, response);
+        } catch (IllegalArgumentException e) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND, e.getMessage());
         }
     }
 }

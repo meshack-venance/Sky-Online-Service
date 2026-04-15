@@ -4,7 +4,6 @@ import com.shacky.materialmanagement.auth.CurrentCustomerService;
 import com.shacky.materialmanagement.entity.Customer;
 import com.shacky.materialmanagement.entity.OnlineService;
 import com.shacky.materialmanagement.entity.ServiceOrder;
-import com.shacky.materialmanagement.entity.UploadedDocument;
 import com.shacky.materialmanagement.service.CustomerService;
 import com.shacky.materialmanagement.service.OnlineServiceService;
 import com.shacky.materialmanagement.service.ReceiptService;
@@ -21,11 +20,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-
-import java.time.LocalDateTime;
-import java.util.List;
 
 @Controller
 @RequestMapping("/orders")
@@ -57,45 +52,18 @@ public class CustomerOrderController {
     @PostMapping("/place")
     public String placeOrder(@Valid @ModelAttribute PlaceOrderRequest request,
                              RedirectAttributes redirectAttributes) {
-
-        Customer customer = customerService.findByLastNameAndPhoneNumber(request.getLastName(), request.getPhoneNumber()).orElse(null);
-
-        if (customer == null) {
-            customer = new Customer();
-            customer.setFirstName(request.getFirstName());
-            customer.setLastName(request.getLastName());
-            customer.setPhoneNumber(request.getPhoneNumber());
-            customer.setEmail(request.getEmail());
-            customer.setRegion(request.getRegion());
-            customer.setDistrict(request.getDistrict());
-            customer.setPassword(request.getPassword());
-            customer = customerService.saveCustomer(customer);
-        }
-
         OnlineService service = onlineServiceService.getServiceById(request.getServiceId()).orElse(null);
         if (service == null) {
             redirectAttributes.addFlashAttribute("error", "Selected service not found.");
             return "redirect:/services";
         }
 
-        double totalCost = service.getCost() != null ? service.getCost() : 0.0;
-        List<ServiceOrder> existingOrders = serviceOrderService.getOrdersByCustomer(customer);
-        for (ServiceOrder existingOrder : existingOrders) {
-            if (existingOrder.getService().getCost() != null) {
-                totalCost += existingOrder.getService().getCost();
-            }
-        }
-
-        ServiceOrder order = new ServiceOrder();
-        order.setCustomer(customer);
-        order.setService(service);
-        order.setStatus("Pending");
-        order.setDatePlaced(LocalDateTime.now());
-        serviceOrderService.saveOrder(order);
+        Customer customer = customerService.findOrCreate(request);
+        double totalCost = serviceOrderService.calculateTotalCostIncluding(customer, service);
+        serviceOrderService.createOrder(customer, service);
 
         redirectAttributes.addFlashAttribute("success", "Order placed successfully.");
         redirectAttributes.addFlashAttribute("totalCost", totalCost);
-
         return "redirect:/orders/details/" + request.getServiceId();
     }
 
@@ -124,15 +92,9 @@ public class CustomerOrderController {
             return "redirect:/services";
         }
 
-        List<ServiceOrder> orders = serviceOrderService.getOrdersByCustomer(customer);
-        model.addAttribute("orders", orders);
+        model.addAttribute("orders", serviceOrderService.getOrdersByCustomer(customer));
         model.addAttribute("customer", customer);
-
-        double totalCost = orders.stream()
-                .mapToDouble(order -> order.getService().getCost() != null ? order.getService().getCost() : 0.0)
-                .sum();
-        model.addAttribute("totalCost", totalCost);
-
+        model.addAttribute("totalCost", serviceOrderService.calculateTotalCostForCustomer(customer));
         return "my-orders";
     }
 
@@ -151,13 +113,7 @@ public class CustomerOrderController {
             return "redirect:/services";
         }
 
-        ServiceOrder order = new ServiceOrder();
-        order.setCustomer(customer);
-        order.setService(service);
-        order.setDatePlaced(LocalDateTime.now());
-        order.setStatus("Pending");
-
-        serviceOrderService.saveOrder(order);
+        serviceOrderService.createOrder(customer, service);
         return "redirect:/orders/my-orders";
     }
 
@@ -197,13 +153,12 @@ public class CustomerOrderController {
             return "redirect:/orders/my-orders";
         }
 
-        if (!"Pending".equals(order.getStatus())) {
-            redirectAttributes.addFlashAttribute("error", "Only pending orders can be cancelled.");
-            return "redirect:/orders/my-orders";
+        try {
+            serviceOrderService.cancelOrder(order);
+            redirectAttributes.addFlashAttribute("success", "Order cancelled and deleted successfully.");
+        } catch (IllegalStateException e) {
+            redirectAttributes.addFlashAttribute("error", e.getMessage());
         }
-
-        serviceOrderService.deleteOrder(order);
-        redirectAttributes.addFlashAttribute("success", "Order cancelled and deleted successfully.");
         return "redirect:/orders/my-orders";
     }
 
@@ -224,17 +179,12 @@ public class CustomerOrderController {
             return "redirect:/orders/my-orders";
         }
 
-        MultipartFile file = request.getDocument();
-        String documentPath = "/path/to/uploaded/document/" + file.getOriginalFilename();
-
-        UploadedDocument uploadedDocument = new UploadedDocument();
-        uploadedDocument.setServiceOrder(order);
-        uploadedDocument.setCustomer(customer);
-        uploadedDocument.setDocumentPath(documentPath);
-        uploadedDocument.setDescription(request.getDescription());
-
-        uploadedDocumentService.saveDocument(uploadedDocument);
-        redirectAttributes.addFlashAttribute("success", "Document uploaded successfully.");
+        try {
+            uploadedDocumentService.uploadDocument(request, order, customer);
+            redirectAttributes.addFlashAttribute("success", "Document uploaded successfully.");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Failed to upload document.");
+        }
         return "redirect:/orders/my-orders";
     }
 }

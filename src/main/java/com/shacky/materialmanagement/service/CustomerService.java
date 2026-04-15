@@ -2,6 +2,7 @@ package com.shacky.materialmanagement.service;
 
 import com.shacky.materialmanagement.entity.Customer;
 import com.shacky.materialmanagement.repository.CustomerRepository;
+import com.shacky.materialmanagement.web.request.PlaceOrderRequest;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -23,18 +24,41 @@ public class CustomerService {
         }
         return customerRepository.save(customer);
     }
+
     public Optional<Customer> findByLastNameAndPhoneNumber(String lastName, Integer phoneNumber) {
         return customerRepository.findByLastNameAndPhoneNumber(lastName, phoneNumber);
     }
+
     public Optional<Customer> getCustomerById(Long id) {
         return customerRepository.findById(id);
     }
+
     public Optional<Customer> findByPhoneNumber(Integer phoneNumber) {
         return customerRepository.findByPhoneNumber(phoneNumber);
     }
 
     public Optional<Customer> findByEmail(String email) {
         return customerRepository.findByEmailIgnoreCase(email);
+    }
+
+    /**
+     * Returns an existing customer matching lastName and phoneNumber,
+     * or creates and persists a new one from the given request.
+     */
+    public Customer findOrCreate(PlaceOrderRequest request) {
+        return customerRepository
+                .findByLastNameAndPhoneNumber(request.getLastName(), request.getPhoneNumber())
+                .orElseGet(() -> {
+                    Customer customer = new Customer();
+                    customer.setFirstName(request.getFirstName());
+                    customer.setLastName(request.getLastName());
+                    customer.setPhoneNumber(request.getPhoneNumber());
+                    customer.setEmail(request.getEmail());
+                    customer.setRegion(request.getRegion());
+                    customer.setDistrict(request.getDistrict());
+                    customer.setPassword(request.getPassword());
+                    return saveCustomer(customer);
+                });
     }
 
     public boolean passwordMatches(Customer customer, String rawPassword) {
