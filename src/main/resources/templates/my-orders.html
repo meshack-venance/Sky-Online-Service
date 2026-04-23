@@ -4,150 +4,180 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My Orders - The Sky Online</title>
-
-    <!-- Bootstrap CSS -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
-
-    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-
-    <!-- Custom CSS -->
     <link rel="stylesheet" th:href="@{/css/style.css}">
-
-    <style>
-        body {
-            font-family: 'Inter', sans-serif;
-        }
-        .order-card {
-            border-left: 5px solid #0d6efd;
-        }
-        .logo-img {
-            height: 40px;
-        }
-    </style>
 </head>
 <body>
-
-<!-- Navbar -->
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-    <div class="container">
-        <a class="navbar-brand d-flex align-items-center" href="/">
-            <img src="/images/kyline-logo.jpeg" class="logo-img me-2" alt="Logo"> The Sky
-        </a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMenu"
-                aria-controls="navbarMenu" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarMenu">
-            <div class="ms-auto d-flex">
-                <a class="btn btn-outline-light me-2" href="/"><i class="bi bi-house-door me-1"></i> Home</a>
-                <a th:if="${currentCustomer != null}" class="btn btn-outline-light" href="/orders/logout">
-                    <i class="bi bi-box-arrow-right me-1"></i> Logout
-                </a>
+<div class="site-shell">
+    <nav class="navbar navbar-expand-lg app-navbar">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center gap-3" th:href="@{/}">
+                <img src="/images/kyline-logo.jpeg" class="brand-logo" alt="Logo">
+                <span>The Sky</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarMenu"
+                    aria-controls="navbarMenu" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarMenu">
+                <div class="ms-auto d-flex flex-column flex-lg-row gap-2">
+                    <a class="btn btn-outline-light" th:href="@{/}"><i class="bi bi-house-door me-1"></i>Home</a>
+                    <a class="btn btn-outline-light" th:href="@{/services}"><i class="bi bi-grid me-1"></i>Services</a>
+                    <a th:if="${currentCustomer != null}" class="btn btn-outline-light" href="/orders/logout">
+                        <i class="bi bi-box-arrow-right me-1"></i>Logout
+                    </a>
+                </div>
             </div>
         </div>
-    </div>
-</nav>
+    </nav>
 
-<!-- Header -->
-<section class="py-5 text-center">
-    <div class="container">
-        <img src="/images/kyline-logo.jpeg" alt="Sky Logo" style="height: 80px;" class="mb-3">
-        <h1 class="h3">My Orders</h1>
-        <p class="lead">Below are the services you’ve ordered</p>
-    </div>
-</section>
-<!-- Orders Section -->
-<section class="container mb-5">
-    <div th:if="${orders.isEmpty()}">
-        <p class="text-center text-muted">You have no orders yet. <i class="bi bi-file-earmark-x"></i></p>
-    </div>
-
-    <div class="row">
-        <div th:each="order : ${orders}" class="col-12 mb-4">
-            <div class="card order-card shadow-sm h-100">
-                <div class="card-body">
-                    <h5 class="card-title">
-                        <i class="bi bi-clipboard-check me-2"></i>
-                        <span th:text="${order.service.title}">Service Title</span>
-                    </h5>
-
-                    <p class="mb-1"><strong>Status:</strong> <span th:text="${order.status}">Pending</span></p>
-                    <p class="mb-1"><strong>Date Placed:</strong>
-                        <span th:text="${#temporals.format(order.datePlaced, 'dd MMM yyyy HH:mm')}">15 Apr 2025</span>
-                    </p>
-                    <p class="mb-1" th:if="${order.service.cost != null}">
-                        <strong>Cost:</strong> TSH
-                        <span th:text="${#numbers.formatDecimal(order.service.cost, 0, 'COMMA', 0, 'POINT')}">0</span>
-                    </p>
-
-                    <div class="mt-3 d-flex flex-wrap gap-2">
-                        <!-- Cancel Button for Pending Orders -->
-                        <form th:if="${order.status == 'Pending'}"
-                              th:action="@{'/orders/cancel/' + ${order.id}}"
-                              method="post">
-                            <button type="submit" class="btn btn-sm btn-danger">
-                                <i class="bi bi-x-circle me-1"></i> Cancel Order
-                            </button>
-                        </form>
-
-                        <!-- Download Button -->
-                        <a th:href="@{'/orders/download/' + ${order.id}}"
-                           class="btn btn-sm btn-outline-primary"
-                           th:classappend="${order.status == 'Cancelled'} ? ' disabled' : ''">
-                            <i class="bi bi-download me-1"></i> Download Receipt (PDF)
-                        </a>
+    <main class="page-main">
+        <div class="container">
+            <section class="hero-panel">
+                <div class="row align-items-center g-4">
+                    <div class="col-lg-8">
+                        <span class="hero-kicker"><i class="bi bi-bag-check"></i>Customer account</span>
+                        <h1 class="hero-title">Track all of your service orders from one commercial-style dashboard.</h1>
+                        <p class="hero-copy">Your order history, status, receipts, and follow-up actions are now structured for a cleaner self-service experience.</p>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="metric-card">
+                            <span class="metric-value" th:text="${orders.size()}">0</span>
+                            <span class="metric-label">Orders on this account</span>
+                        </div>
                     </div>
                 </div>
+            </section>
+
+            <section class="section-block" th:if="${totalCost > 0}">
+                <div class="summary-strip">
+                    <div class="summary-box">
+                        <span class="label">Total cost</span>
+                        <span class="value">TSH <span th:text="${#numbers.formatDecimal(totalCost, 0, 'COMMA', 0, 'POINT')}">0</span></span>
+                    </div>
+                    <div class="summary-box">
+                        <span class="label">Available action</span>
+                        <span class="value">Download receipts</span>
+                    </div>
+                    <div class="summary-box">
+                        <span class="label">Next step</span>
+                        <span class="value">Add more services</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="section-block">
+                <div th:if="${orders.isEmpty()}" class="empty-state">
+                    <i class="bi bi-file-earmark-x fs-3 d-block mb-2"></i>
+                    You have no orders yet.
+                </div>
+
+                <div class="row g-4" th:if="${!orders.isEmpty()}">
+                    <div th:each="order : ${orders}" class="col-12 col-lg-6">
+                        <div class="order-card h-100">
+                            <div class="card-body-soft">
+                                <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+                                    <div>
+                                        <div class="card-kicker mb-2"><i class="bi bi-clipboard-check"></i>Service order</div>
+                                        <h5 class="fw-bold mb-0" th:text="${order.service.title}">Service Title</h5>
+                                    </div>
+                                    <span class="status-pill danger" th:if="${order.status == 'Pending'}" th:text="${order.status}">Pending</span>
+                                    <span class="status-pill" th:if="${order.status == 'In Progress'}" th:text="${order.status}">In Progress</span>
+                                    <span class="status-pill success" th:if="${order.status == 'Completed'}" th:text="${order.status}">Completed</span>
+                                    <span class="status-pill danger" th:if="${order.status == 'Cancelled'}" th:text="${order.status}">Cancelled</span>
+                                </div>
+
+                                <div class="highlight-list">
+                                    <div class="highlight-item">
+                                        <span class="highlight-icon"><i class="bi bi-calendar-event"></i></span>
+                                        <div>
+                                            <strong>Date Placed</strong>
+                                            <div class="text-muted" th:text="${#temporals.format(order.datePlaced, 'dd MMM yyyy HH:mm')}">15 Apr 2025</div>
+                                        </div>
+                                    </div>
+                                    <div class="highlight-item" th:if="${order.service.cost != null}">
+                                        <span class="highlight-icon"><i class="bi bi-cash-coin"></i></span>
+                                        <div>
+                                            <strong>Cost</strong>
+                                            <div class="text-muted">TSH <span th:text="${#numbers.formatDecimal(order.service.cost, 0, 'COMMA', 0, 'POINT')}">0</span></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="mt-4 d-flex flex-wrap gap-2">
+                                    <form th:if="${order.status == 'Pending'}" th:action="@{'/orders/cancel/' + ${order.id}}" method="post">
+                                        <button type="submit" class="btn btn-danger btn-sm">
+                                            <i class="bi bi-x-circle me-1"></i>Cancel Order
+                                        </button>
+                                    </form>
+                                    <a th:href="@{'/orders/download/' + ${order.id}}"
+                                       class="btn btn-outline-primary btn-sm"
+                                       th:classappend="${order.status == 'Cancelled'} ? ' disabled' : ''">
+                                        <i class="bi bi-download me-1"></i>Download Receipt (PDF)
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <div th:if="${successMessage}" class="alert alert-success text-center mt-4" role="alert">
+                <span th:text="${successMessage}"></span>
+            </div>
+
+            <section class="section-block">
+                <div class="row g-4">
+                    <div class="col-lg-7">
+                        <div class="content-panel h-100">
+                            <div class="card-kicker mb-3"><i class="bi bi-chat-dots"></i>Feedback</div>
+                            <h2 class="section-title">Leave a comment about our service</h2>
+                            <p class="section-copy">Use customer feedback to improve trust and service quality.</p>
+                            <form th:action="@{/comments/post}" method="post" class="mt-4">
+                                <div class="mb-3">
+                                    <textarea class="form-control" name="content" rows="4" placeholder="Write your thoughts about our services..." required></textarea>
+                                </div>
+                                <button class="btn btn-success" type="submit">
+                                    <i class="bi bi-send me-1"></i>Submit Comment
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="col-lg-5">
+                        <div class="cta-panel h-100 d-flex flex-column justify-content-center">
+                            <div class="card-kicker mb-3"><i class="bi bi-plus-circle"></i>Continue ordering</div>
+                            <h3 class="h3 fw-bold">Need another service?</h3>
+                            <p class="text-muted">Return to the service catalogue and add more items to your order history.</p>
+                            <div class="mt-3">
+                                <a th:href="@{/services}" class="btn btn-primary">
+                                    <i class="bi bi-grid me-1"></i>Add More Services
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container d-flex flex-column flex-lg-row justify-content-between gap-3">
+            <div>
+                <div class="footer-title">The Sky Online Service</div>
+                <div>Self-service order tracking with cleaner status visibility and supporting customer actions.</div>
+            </div>
+            <div class="text-lg-end">
+                <div>&copy; 2025 The Sky Online Service</div>
+                <div>Developed by <a href="mailto:meshackvenance99@gmail.com">Mr. Meshack Venance</a></div>
             </div>
         </div>
-    </div>
-
-    <div class="card p-3 mb-4 text-end" th:if="${totalCost > 0}">
-        <h5>Total Cost: TSH
-            <span th:text="${#numbers.formatDecimal(totalCost, 0, 'COMMA', 0, 'POINT')}">0</span>
-        </h5>
-    </div>
-
-    <div class="text-center">
-        <a href="/services" class="btn btn-primary">
-            <i class="bi bi-plus-circle me-1"></i> Add More Services
-        </a>
-    </div>
-</section>
-
-<!-- Success Message -->
-<div th:if="${successMessage}" class="alert alert-success text-center" role="alert">
-    <span th:text="${successMessage}"></span>
+    </footer>
 </div>
 
-<!-- General Comment Section -->
-<section class="container mb-5">
-    <div class="card shadow-sm">
-        <div class="card-header bg-primary text-white">
-            <strong>Leave a Comment <i class="bi bi-chat-dots"></i></strong>
-        </div>
-        <div class="card-body">
-            <form th:action="@{/comments/post}" method="post">
-                <div class="mb-3">
-                    <textarea class="form-control" name="content" rows="3"
-                              placeholder="Write your thoughts about our services..." required></textarea>
-                </div>
-                <button class="btn btn-success" type="submit">
-                    <i class="bi bi-send me-1"></i> Submit Comment
-                </button>
-            </form>
-        </div>
-    </div>
-</section>
-
-<!-- Footer -->
-<footer class="bg-dark text-white text-center py-3 mt-auto">
-    <div>&copy; 2025 The Sky Online Service</div>
-    <div>Developed by <a href="mailto:meshackvenance99@gmail.com" class="text-info text-decoration-none">Mr. Meshack Venance</a></div>
-</footer>
-
-<!-- Auto-hide Alert -->
 <script>
     setTimeout(() => {
         const alert = document.querySelector('.alert');
@@ -156,8 +186,6 @@
         }
     }, 4000);
 </script>
-
-<!-- Bootstrap Bundle JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

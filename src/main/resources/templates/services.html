@@ -2,134 +2,135 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>Our Services</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <!-- Bootstrap CSS -->
+    <title>Our Services</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
-
-    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
-
-    <!-- Custom Shared CSS -->
     <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
-
-<!-- Navbar -->
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-    <div class="container">
-        <a class="navbar-brand d-flex align-items-center" th:href="@{/}">
-            <img src="/images/kyline-logo.jpeg" alt="Logo" style="height: 40px; margin-right: 10px;">
-            <span class="fw-bold"><i class="bi bi-cloud-fill me-1"></i>The Sky</span>
-        </a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
-                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav ms-auto">
-                <li class="nav-item">
-                    <a class="nav-link" th:href="@{/}">
-                        <i class="bi bi-house-door-fill me-1"></i>Home
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link active" th:href="@{/services}">
-                        <i class="bi bi-gear-fill me-1"></i>Services
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" th:href="@{/admin}">
-                        <i class="bi bi-person-lock-fill me-1"></i>Admin
-                    </a>
-                </li>
-            </ul>
+<div class="site-shell">
+    <nav class="navbar navbar-expand-lg app-navbar">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center gap-3" th:href="@{/}">
+                <img src="/images/kyline-logo.jpeg" alt="Logo" class="brand-logo">
+                <span>The Sky</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-2">
+                    <li class="nav-item"><a class="nav-link" th:href="@{/}"><i class="bi bi-house-door me-1"></i>Home</a></li>
+                    <li class="nav-item"><a class="nav-link active" th:href="@{/services}"><i class="bi bi-grid me-1"></i>Services</a></li>
+                    <li class="nav-item"><a class="nav-link" th:href="@{/admin}"><i class="bi bi-person-lock me-1"></i>Admin</a></li>
+                </ul>
+            </div>
         </div>
-    </div>
-</nav>
+    </nav>
 
-<!-- Services Section -->
-<section class="py-5 bg-light">
-    <div class="container">
-        <h2 class="text-center mb-4"><i class="bi bi-tools me-2"></i>Available Services</h2>
-
-        <div class="row g-4" th:if="${services != null and services.size() > 0}">
-            <div class="col-md-4" th:each="service : ${services}">
-                <div class="card h-100 shadow-sm">
-                    <div class="card-body">
-                        <h5 class="card-title">
-                            <i class="bi bi-briefcase-fill me-2 text-primary"></i>
-                            <span th:text="${service.title}">Service Title</span>
-                        </h5>
-                        <p class="card-text text-muted small" th:text="${#strings.abbreviate(service.requirements, 50)}">
-                            Service Requirements
-                        </p>
-                        <a th:href="@{/service/{id}(id=${service.id})}" class="btn btn-sm btn-outline-primary">
-                            <i class="bi bi-info-circle-fill me-1"></i> See More
-                        </a>
+    <main class="page-main">
+        <div class="container">
+            <section class="hero-panel">
+                <div class="row align-items-center g-4">
+                    <div class="col-lg-8">
+                        <span class="hero-kicker"><i class="bi bi-briefcase"></i>Service catalogue</span>
+                        <h1 class="hero-title">Browse services designed for a clearer customer journey.</h1>
+                        <p class="hero-copy">Each service now sits in a more structured commercial interface, making it easier for customers to evaluate requirements and take action.</p>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="metric-card">
+                            <span class="metric-value" th:text="${services != null ? services.size() : 0}">0</span>
+                            <span class="metric-label">Published services</span>
+                        </div>
                     </div>
                 </div>
+            </section>
+
+            <section class="section-block">
+                <div class="content-panel">
+                    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-end gap-3 mb-4">
+                        <div>
+                            <div class="card-kicker mb-2"><i class="bi bi-tools"></i>Available services</div>
+                            <h2 class="section-title">Choose the service that matches your need</h2>
+                            <p class="section-copy mb-0">The catalogue layout now emphasizes clarity, scannability, and action.</p>
+                        </div>
+                        <button class="btn btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#commentsSection"
+                                aria-expanded="false" aria-controls="commentsSection">
+                            <i class="bi bi-chat-dots me-2"></i>View Customer Comments
+                        </button>
+                    </div>
+
+                    <div class="row g-4" th:if="${services != null and services.size() > 0}">
+                        <div class="col-md-6 col-xl-4" th:each="service : ${services}">
+                            <div class="service-card h-100">
+                                <div class="card-body-soft d-flex flex-column h-100">
+                                    <div class="card-kicker mb-3"><i class="bi bi-briefcase-fill"></i>Professional service</div>
+                                    <h5 class="fw-bold mb-3" th:text="${service.title}">Service Title</h5>
+                                    <p class="text-muted flex-grow-1" th:text="${#strings.abbreviate(service.requirements, 120)}">Service requirements</p>
+                                    <div class="d-flex align-items-center justify-content-between mt-3 gap-3">
+                                        <div class="text-muted small">Detailed requirements and order entry available on the next screen.</div>
+                                        <a th:href="@{/service/{id}(id=${service.id})}" class="btn btn-primary">
+                                            <i class="bi bi-arrow-right-circle me-1"></i>See More
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div th:if="${services == null or services.size() == 0}" class="empty-state">
+                        <i class="bi bi-exclamation-circle fs-3 d-block mb-2"></i>
+                        No services available at the moment.
+                    </div>
+                </div>
+            </section>
+
+            <section class="section-block collapse" id="commentsSection">
+                <div class="content-panel">
+                    <div class="card-kicker mb-2"><i class="bi bi-people"></i>Customer comments</div>
+                    <h2 class="section-title">What customers are saying</h2>
+                    <p class="section-copy">Feedback is presented as a supporting trust signal for new visitors.</p>
+
+                    <div class="surface-grid mt-4" th:if="${comments != null and comments.size() > 0}">
+                        <div class="comment-card p-4" th:each="comment : ${comments}">
+                            <p class="mb-3" th:text="${comment.content}">Sample customer comment</p>
+                            <small class="text-muted">
+                                <i class="bi bi-person-circle me-1"></i>
+                                <span th:text="${comment.customer.lastName}">Customer</span>
+                                <i class="bi bi-calendar-event ms-3 me-1"></i>
+                                <span th:text="${#temporals.format(comment.postedAt, 'dd MMM yyyy HH:mm')}">Date</span>
+                            </small>
+                        </div>
+                    </div>
+
+                    <div th:if="${comments == null or comments.size() == 0}" class="empty-state mt-4">
+                        <i class="bi bi-emoji-frown fs-3 d-block mb-2"></i>
+                        No comments yet.
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container d-flex flex-column flex-lg-row justify-content-between gap-3">
+            <div>
+                <div class="footer-title">The Sky Online Service</div>
+                <div>Commercial presentation for service discovery, trust building, and faster conversion.</div>
+            </div>
+            <div class="text-lg-end">
+                <div>&copy; 2025 The Sky Online Service. All rights reserved.</div>
+                <div class="mt-1">Developed by <a href="mailto:meshackvenance99@gmail.com">Mr. Meshack Venance</a></div>
             </div>
         </div>
-
-        <div th:if="${services == null or services.size() == 0}" class="alert alert-info text-center">
-            <i class="bi bi-exclamation-circle me-2"></i>No services available at the moment.
-        </div>
-    </div>
-</section>
-
-<!-- Button to toggle the Comments Section -->
-<div class="text-center my-4">
-    <button class="btn btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#commentsSection"
-            aria-expanded="false" aria-controls="commentsSection">
-        <i class="bi bi-chat-dots-fill me-1"></i> View Customer Comments
-    </button>
+    </footer>
 </div>
 
-<!-- Comments Section (Collapsible) -->
-<section class="collapse container mb-5" id="commentsSection">
-    <h4 class="text-center mb-4"><i class="bi bi-people-fill me-2"></i>What Our Customers Say</h4>
-
-    <div th:if="${comments != null and comments.size() > 0}">
-        <div class="list-group">
-            <div class="list-group-item d-flex justify-content-between align-items-start"
-                 th:each="comment : ${comments}">
-                <div class="me-auto">
-                    <p class="mb-1" th:text="${comment.content}">Sample customer comment</p>
-                    <small class="text-muted">
-                        <i class="bi bi-person-circle me-1 text-primary"></i>
-                        <span th:text="${comment.customer.lastName}">Customer</span>
-                        <i class="bi bi-calendar-event ms-2 me-1"></i>
-                        <span th:text="${#temporals.format(comment.postedAt, 'dd MMM yyyy HH:mm')}">Date</span>
-                    </small>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div th:if="${comments == null or comments.size() == 0}" class="text-center text-muted">
-        <i class="bi bi-emoji-frown me-1"></i>No comments yet.
-    </div>
-</section>
-
-<!-- Footer -->
-<footer class="footer bg-dark text-white py-3 mt-5">
-    <div class="container text-center">
-        <div>
-            <i class="bi bi-c-circle me-1"></i>2025 The Sky Online Service. All rights reserved.
-        </div>
-        <div class="mt-1">
-            <i class="bi bi-code-slash me-1"></i>
-            Developed by <a href="mailto:meshackvenance99@gmail.com" class="text-decoration-none text-info">
-            Mr. Meshack Venance
-        </a>
-        </div>
-    </div>
-</footer>
-
-<!-- Bootstrap JS Bundle (Including Popper) -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-
 </body>
 </html>
